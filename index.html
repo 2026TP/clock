@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Clock</title>
+<style>
+  /* ============================================================
+     THEME VARIABLES
+     ============================================================ */
+  body,
+  body.theme-dark {
+    --bg-color: #121214;
+    --surface-color: #1e1e24;
+    --surface-hover: #24242b;
+    --text-color: #ffffff;
+    --text-secondary: #a0a0ab;
+    --text-dim: #6b6b76;
+    --border-color: #3f3f46;
+    --hand-minute: #ffffff;
+    --clock-border: #3f3f46;
+    --shadow-color: rgba(0,0,0,0.5);
+  }
+
+  body.theme-light {
+    --bg-color: #f2f2f5;
+    --surface-color: #ffffff;
+    --surface-hover: #f8f8fb;
+    --text-color: #18181b;
+    --text-secondary: #52525b;
+    --text-dim: #a1a1aa;
+    --border-color: #d4d4d8;
+    --hand-minute: #18181b;
+    --clock-border: #d4d4d8;
+    --shadow-color: rgba(0,0,0,0.12);
+  }
+
+  :root {
+    --primary-red: #ff4a4a;
+    --primary-blue: #3b82f6;
+    --accent-green: #10b981;
+    --clock-size: 340px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow-x: hidden;
+    transition: background-color 0.25s, color 0.25s;
+  }
+
+  /* ============================================================
+     TOP BAR
+     ============================================================ */
+  .top-container {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .score-board {
+    background: var(--surface-color);
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    transition: background-color 0.25s, border-color 0.25s;
+  }
+  .score-board .streak-val { color: var(--accent-green); }
+  .score-board .best-val   { color: var(--primary-blue); }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .icon-btn,
+  .mode-select {
+    background: var(--surface-color);
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.25s;
+  }
+  .mode-select {
+    padding: 8px 10px;
+    max-width: 140px;
+  }
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .icon-btn:hover,
+  .mode-select:hover,
+  .mode-select:focus { border-color: var(--primary-blue); }
+
+  /* ============================================================
+     MAIN WORKSPACE
+     ============================================================ */
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  /* ============================================================
+     CLOCK
+     ============================================================ */
+  .clock-container {
+    position: relative;
+    width: var(--clock-size);
+    height: var(--clock-size);
+    background: var(--surface-color);
+    border-radius: 50%;
+    border: 8px solid var(--clock-border);
+    box-shadow: 0 10px 30px var(--shadow-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.1s, background-color 0.25s;
+  }
+  .clock-container:hover  { border-color: var(--primary-blue); }
+  .clock-container:active { transform: scale(0.99); }
+
+  .clock-face {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .center-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    background: var(--hand-minute);
+    border: 3px solid var(--bg-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    transition: background-color 0.25s;
+  }
+
+  .hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: bottom center;
+    border-radius: 10px;
+    transform: translateX(-50%) rotate(0deg);
+    transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
+                background-color 0.25s, box-shadow 0.25s;
+  }
+  .hour-hand {
+    width: 8px;
+    height: 75px;
+    background-color: var(--primary-red);
+    z-index: 3;
+  }
+  .minute-hand {
+    width: 5px;
+    height: 115px;
+    background-color: var(--hand-minute);
+    z-index: 2;
+  }
+
+  /* Hint-mode glow */
+  body.hint-mode .hour-hand {
+    box-shadow: 0 0 0 3px rgba(255,74,74,0.35), 0 0 16px var(--primary-red);
+  }
+  body.hint-mode .minute-hand {
+    background-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.35), 0 0 16px var(--primary-blue);
+  }
+
+  .track-marker {
+    position: absolute;
+    width: 4px;
+    height: 10px;
+    background: var(--border-color);
+    left: 50%;
+    top: 6px;
+    border-radius: 2px;
+    transition: background-color 0.25s;
+  }
+  .track-marker.major   { width: 6px; height: 16px; background: var(--text-secondary); }
+  .track-marker.quarter { background: var(--primary-blue); }
+
+  .hour-number {
+    position: absolute;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-color);
+    line-height: 1;
+    pointer-events: none;
+    transition: color 0.25s;
+  }
+  .minute-number {
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    line-height: 1;
+    pointer-events: none;
+    transition: color 0.25s;
+  }
+
+  /* ============================================================
+     HINT TEXT (below clock)
+     ============================================================ */
+  .hint-text {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 16px;
+    background: rgba(59,130,246,0.12);
+    border: 2px solid var(--primary-blue);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    overflow: hidden;
+  }
+  .hint-text.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-width: 2px;
+  }
+
+  /* ============================================================
+     INTERACTIVE BOX
+     ============================================================ */
+  .interactive-box-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* --- Reveal square (self-check mode) --- */
+  .digital-display-square {
+    width: 100%;
+    background: var(--surface-color);
+    border: 3px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+  }
+  .digital-display-square:hover {
+    border-color: var(--primary-blue);
+    background: var(--surface-hover);
+  }
+  .time-text {
+    font-size: 2.4rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    letter-spacing: 3px;
+  }
+  .time-hidden-prompt {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* --- Self-check feedback buttons --- */
+  .feedback-row {
+    display: flex;
+    width: 100%;
+    gap: 14px;
+  }
+  .btn-feedback {
+    flex: 1;
+    padding: 18px 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    color: #ffffff;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .btn-feedback:hover  { filter: brightness(1.1); }
+  .btn-feedback:active { transform: scale(0.98); }
+  .btn-correct   { background-color: var(--accent-green); }
+  .btn-incorrect { background-color: var(--primary-red); }
+
+  /* --- Quiz mode --- */
+  .quiz-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .quiz-prompt {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+  .quiz-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+  .quiz-choice {
+    padding: 20px 12px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 2px;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quiz-choice:hover:not(:disabled) {
+    border-color: var(--primary-blue);
+    background: var(--surface-hover);
+    transform: translateY(-1px);
+  }
+  .quiz-choice:disabled { cursor: default; }
+  .quiz-choice.is-correct {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #ffffff;
+  }
+  .quiz-choice.is-wrong {
+    background: var(--primary-red);
+    border-color: var(--primary-red);
+    color: #ffffff;
+  }
+
+  /* --- Feedback / explanation --- */
+  .feedback-message {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    background: var(--surface-color);
+  }
+  .feedback-message.is-correct {
+    background: rgba(16,185,129,0.14);
+    border-color: var(--accent-green);
+    color: var(--text-color);
+  }
+  .feedback-message.is-wrong {
+    background: rgba(255,74,74,0.14);
+    border-color: var(--primary-red);
+    color: var(--text-color);
+  }
+
+  /* --- Action row (hint / speak / skip) --- */
+  .action-row {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .action-btn:hover {
+    border-color: var(--primary-blue);
+    background: var(--surface-hover);
+  }
+
+  /* ============================================================
+     INSTRUCTION HINT (bottom)
+     ============================================================ */
+  .instruction-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: auto;
+    padding-top: 24px;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+  .instruction-hint b { color: var(--text-color); }
+
+  /* ============================================================
+     CONFETTI
+     ============================================================ */
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  [hidden] { display: none !important; }
+
+  /* ============================================================
+     SMALL SCREENS
+     ============================================================ */
+  @media (max-width: 420px) {
+    :root { --clock-size: 280px; }
+    .hour-number   { font-size: 1.25rem; }
+    .minute-number { font-size: 0.6rem; }
+    .time-text     { font-size: 2rem; }
+    .quiz-choice   { font-size: 1.25rem; padding: 16px 10px; }
+    .clock-container { border-width: 6px; }
+    .mode-select   { max-width: 110px; font-size: 0.8rem; padding: 8px; }
+    .score-board   { font-size: 0.8rem; padding: 8px 10px; gap: 8px; }
+  }
+</style>
+</head>
+<body class="theme-dark">
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<div class="top-container">
+  <div class="score-board">
+    <div>✅ <span id="correct-count" class="streak-val">0</span>/<span id="total-count">0</span></div>
+    <div>🔥 <span id="streak-count" class="streak-val">0</span></div>
+    <div>🏆 <span id="best-count" class="best-val">0</span></div>
+  </div>
+
+  <div class="controls">
+    <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">🌙</button>
+    <select id="mode-select" class="mode-select" aria-label="Difficulty level">
+      <option value="standard">Quarters</option>
+      <option value="intermediate">5 Minutes</option>
+      <option value="advanced">Any Minute</option>
+    </select>
+    <select id="answer-mode" class="mode-select" aria-label="Answer style">
+      <option value="self">Self-check</option>
+      <option value="quiz">Quiz</option>
+    </select>
+  </div>
+</div>
+
+<!-- ============================================================
+     WORKSPACE
+     ============================================================ -->
+<div class="workspace">
+
+  <div class="clock-container" id="clock-container" role="button" tabindex="0"
+       aria-label="Analog clock. Click or press space for a new time.">
+    <div class="clock-face" id="clock-face">
+      <div class="center-pin"></div>
+      <div id="hour-hand" class="hand hour-hand"></div>
+      <div id="minute-hand" class="hand minute-hand"></div>
+    </div>
+  </div>
+
+  <div class="hint-text" id="hint-text">
+    🕐 The <b style="color:var(--primary-red)">SHORT red hand</b> shows the <b>hour</b>.
+    The <b style="color:var(--primary-blue)">LONG blue hand</b> shows the <b>minutes</b>.
+    Count by 5s starting from the 12.
+  </div>
+
+  <div class="interactive-box-wrapper">
+
+    <!-- Self-check mode: reveal square -->
+    <div class="digital-display-square" id="digital-toggle-square" role="button" tabindex="0"
+         aria-label="Reveal the digital time">
+      <div id="time-display" class="time-text" hidden>12:00</div>
+      <div id="prompt-display" class="time-hidden-prompt">👉 Click to Reveal Time 👈</div>
+    </div>
+
+    <!-- Self-check mode: feedback buttons -->
+    <div class="feedback-row" id="feedback-row">
+      <button type="button" class="btn-feedback btn-incorrect" id="btn-wrong">❌ Incorrect</button>
+      <button type="button" class="btn-feedback btn-correct"   id="btn-right">✅ Correct!</button>
+    </div>
+
+    <!-- Quiz mode: multiple choice -->
+    <div class="quiz-area" id="quiz-area" hidden>
+      <div class="quiz-prompt">What time does the clock show?</div>
+      <div class="quiz-choices" id="quiz-choices"></div>
+    </div>
+
+    <!-- Feedback / explanation -->
+    <div class="feedback-message" id="feedback-message" hidden></div>
+
+    <!-- Action row -->
+    <div class="action-row">
+      <button type="button" class="action-btn" id="btn-hint"  aria-label="Show hint">💡 Hint</button>
+      <button type="button" class="action-btn" id="btn-speak" aria-label="Speak the time">🔊 Speak</button>
+      <button type="button" class="action-btn" id="btn-skip"  aria-label="Skip to a new clock">⏭ Skip</button>
+    </div>
+
+  </div>
+</div>
+
+<p class="instruction-hint">
+  Press <b>SPACE</b> for a new clock · <b>ENTER</b> to reveal · Tap the clock for a new time
+</p>
+
+<script>
+'use strict';
+
+/* ============================================================
+   ELEMENT REFERENCES
+   ============================================================ */
+const clockContainer = document.getElementById('clock-container');
+const clockFace      = document.getElementById('clock-face');
+const hourHand       = document.getElementById('hour-hand');
+const minuteHand     = document.getElementById('minute-hand');
+const modeSelect     = document.getElementById('mode-select');
+const answerModeSel  = document.getElementById('answer-mode');
+const themeToggle    = document.getElementById('theme-toggle');
+const digitalSquare  = document.getElementById('digital-toggle-square');
+const timeDisplay    = document.getElementById('time-display');
+const promptDisplay  = document.getElementById('prompt-display');
+const feedbackRow    = document.getElementById('feedback-row');
+const quizArea       = document.getElementById('quiz-area');
+const quizChoicesEl  = document.getElementById('quiz-choices');
+const feedbackMsg    = document.getElementById('feedback-message');
+const hintText       = document.getElementById('hint-text');
+const btnRight       = document.getElementById('btn-right');
+const btnWrong       = document.getElementById('btn-wrong');
+const btnHint        = document.getElementById('btn-hint');
+const btnSpeak       = document.getElementById('btn-speak');
+const btnSkip        = document.getElementById('btn-skip');
+const streakText     = document.getElementById('streak-count');
+const bestText       = document.getElementById('best-count');
+const correctText    = document.getElementById('correct-count');
+const totalText      = document.getElementById('total-count');
+const canvas         = document.getElementById('confetti-canvas');
+const ctx            = canvas.getContext('2d');
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentHour   = 12;
+let currentMinute = 0;
+let isTimeVisible = false;
+let currentStreak = 0;
+let bestStreak    = 0;
+let correctTotal  = 0;
+let sessionTotal  = 0;
+let answerMode    = 'self';       // 'self' | 'quiz'
+let pendingAdvanceTimer = null;
+let hintTimer = null;
+
+/* Restore saved best streak */
+try {
+  const savedBest = localStorage.getItem('learningClockBestStreak');
+  if (savedBest !== null) bestStreak = Number(savedBest) || 0;
+} catch (e) {}
+bestText.textContent = bestStreak;
+
+/* Restore saved theme */
+try {
+  const savedTheme = localStorage.getItem('learningClockTheme');
+  if (savedTheme === 'light') {
+    document.body.classList.remove('theme-dark');
+    document.body.classList.add('theme-light');
+    themeToggle.textContent = '☀️';
+  }
+} catch (e) {}
+
+/* ============================================================
+   CONFETTI
+   ============================================================ */
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+let particles = [];
+let animating = false;
+const CONFETTI_COLORS = ['#10b981', '#3b82f6', '#ff4a4a', '#fbbf24', '#a78bfa'];
+
+function createConfetti() {
+  const originX = window.innerWidth  / 2;
+  const originY = window.innerHeight / 2;
+
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: originX + (Math.random() * 120 - 60),
+      y: originY + (Math.random() * 120 - 60),
+      vx: (Math.random() - 0.5) * 12,
+      vy: (Math.random() - 0.9) * 16 - 2,
+      radius: Math.random() * 5 + 3,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      alpha: 1,
+      decay: Math.random() * 0.015 + 0.012
+    });
+  }
+
+  if (!animating) {
+    animating = true;
+    requestAnimationFrame(animateParticles);
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x     += p.vx;
+    p.y     += p.vy;
+    p.vy    += 0.35;
+    p.alpha -= p.decay;
+
+    if (p.alpha <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle   = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  if (particles.length > 0) requestAnimationFrame(animateParticles);
+  else animating = false;
+}
+
+/* ============================================================
+   CLOCK FACE BUILD
+   ============================================================ */
+function setupClockUi() {
+  clockFace.querySelectorAll('.track-marker, .hour-number, .minute-number')
+           .forEach(el => el.remove());
+
+  const size    = clockFace.clientWidth;
+  const center  = size / 2;
+  const tickTop = 6;
+
+  /* 60 minute ticks */
+  for (let i = 0; i < 60; i++) {
+    const marker = document.createElement('div');
+    marker.className = 'track-marker';
+    if (i % 5 === 0)  marker.classList.add('major');
+    if (i % 15 === 0) marker.classList.add('quarter');
+    marker.style.transformOrigin = `50% ${center - tickTop}px`;
+    marker.style.transform = `translateX(-50%) rotate(${i * 6}deg)`;
+    clockFace.appendChild(marker);
+  }
+
+  /* Hour numbers */
+  const hourRadius = 100;
+  for (let num = 1; num <= 12; num++) {
+    const el = document.createElement('div');
+    el.className   = 'hour-number';
+    el.textContent = num;
+    const angle = num * 30 * Math.PI / 180;
+    el.style.left = `${center + hourRadius * Math.sin(angle)}px`;
+    el.style.top  = `${center - hourRadius * Math.cos(angle)}px`;
+    el.style.transform = 'translate(-50%, -50%)';
+    clockFace.appendChild(el);
+  }
+
+  /* Small minute numbers */
+  const minuteRadius = 132;
+  for (let h = 1; h <= 12; h++) {
+    const minuteValue = (h * 5) % 60;
+    const el = document.createElement('div');
+    el.className   = 'minute-number';
+    el.textContent = minuteValue.toString().padStart(2, '0');
+    const angle = h * 30 * Math.PI / 180;
+    el.style.left = `${center + minuteRadius * Math.sin(angle)}px`;
+    el.style.top  = `${center - minuteRadius * Math.cos(angle)}px`;
+    el.style.transform = 'translate(-50%, -50%)';
+    clockFace.appendChild(el);
+  }
+}
+
+/* ============================================================
+   TIME GENERATION & RENDER
+   ============================================================ */
+function generateChallengeTime() {
+  clearTimeout(pendingAdvanceTimer);
+  const mode = modeSelect.value;
+
+  currentHour = Math.floor(Math.random() * 12) + 1;
+
+  if (mode === 'standard') {
+    const quarters = [0, 15, 30, 45];
+    currentMinute = quarters[Math.floor(Math.random() * quarters.length)];
+  } else if (mode === 'intermediate') {
+    currentMinute = Math.floor(Math.random() * 12) * 5;
+  } else {
+    currentMinute = Math.floor(Math.random() * 60);
+  }
+
+  updateClockVisuals();
+  hideTime();
+  hideFeedback();
+  if (answerMode === 'quiz') renderQuizChoices();
+}
+
+function updateClockVisuals() {
+  const minuteAngle = currentMinute * 6;
+  const hourAngle   = (currentHour % 12) * 30 + currentMinute * 0.5;
+
+  minuteHand.style.transform = `translateX(-50%) rotate(${minuteAngle}deg)`;
+  hourHand.style.transform   = `translateX(-50%) rotate(${hourAngle}deg)`;
+
+  const hh = currentHour.toString().padStart(2, '0');
+  const mm = currentMinute.toString().padStart(2, '0');
+  timeDisplay.textContent = `${hh}:${mm}`;
+}
+
+/* ============================================================
+   REVEAL / HIDE
+   ============================================================ */
+function showTime() {
+  isTimeVisible = true;
+  timeDisplay.hidden   = false;
+  promptDisplay.hidden = true;
+}
+function hideTime() {
+  isTimeVisible = false;
+  timeDisplay.hidden   = true;
+  promptDisplay.hidden = false;
+}
+function toggleTimeVisibility() {
+  isTimeVisible ? hideTime() : showTime();
+}
+
+/* ============================================================
+   HINT
+   ============================================================ */
+function showHint() {
+  document.body.classList.add('hint-mode');
+  hintText.classList.add('is-visible');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    document.body.classList.remove('hint-mode');
+    hintText.classList.remove('is-visible');
+  }, 4500);
+}
+
+/* ============================================================
+   SPEECH
+   ============================================================ */
+const NUM_WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine',
+                   'ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen',
+                   'seventeen','eighteen','nineteen'];
+const TENS_WORDS = ['', '', 'twenty', 'thirty', 'forty', 'fifty'];
+
+function minuteToWords(m) {
+  if (m === 0) return "o'clock";
+  if (m < 20) return NUM_WORDS[m];
+  const t = Math.floor(m / 10);
+  const o = m % 10;
+  return o === 0 ? TENS_WORDS[t] : `${TENS_WORDS[t]}-${NUM_WORDS[o]}`;
+}
+
+function speakCurrentTime() {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const text = `${NUM_WORDS[currentHour]} ${minuteToWords(currentMinute)}`;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate  = 0.9;
+    utter.pitch = 1.1;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {}
+}
+
+/* ============================================================
+   SOUND (Web Audio)
+   ============================================================ */
+let audioCtx = null;
+function playTone(kind) {
+  try {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const now  = audioCtx.currentTime;
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (kind === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(660, now);
+      osc.frequency.setValueAtTime(880, now + 0.12);
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      osc.start(now); osc.stop(now + 0.36);
+    } else if (kind === 'wrong') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(200, now);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+      osc.start(now); osc.stop(now + 0.31);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+      osc.start(now); osc.stop(now + 0.16);
+    }
+  } catch (e) {}
+}
+
+/* ============================================================
+   SCORE BOARD
+   ============================================================ */
+function refreshScoreBoard() {
+  streakText.textContent  = currentStreak;
+  bestText.textContent    = bestStreak;
+  correctText.textContent = correctTotal;
+  totalText.textContent   = sessionTotal;
+}
+function saveBestStreak() {
+  try { localStorage.setItem('learningClockBestStreak', String(bestStreak)); } catch (e) {}
+}
+
+/* ============================================================
+   FEEDBACK MESSAGE
+   ============================================================ */
+function hideFeedback() {
+  feedbackMsg.hidden = true;
+  feedbackMsg.className = 'feedback-message';
+  feedbackMsg.textContent = '';
+}
+
+function showFeedback(isCorrect, html) {
+  feedbackMsg.hidden = false;
+  feedbackMsg.className = 'feedback-message ' + (isCorrect ? 'is-correct' : 'is-wrong');
+  feedbackMsg.innerHTML = html;
+}
+
+/* ============================================================
+   EXPLANATION TEXT
+   ============================================================ */
+function getExplanation(hour, minute) {
+  const nextHour = (hour % 12) + 1;
+  let hourPart, minutePart;
+
+  if (minute === 0) {
+    hourPart   = `The short hand points at the <b>${hour}</b>.`;
+    minutePart = `The long hand points at the <b>12</b>, so it's o'clock.`;
+  } else if (minute < 30) {
+    hourPart   = `The short hand is past the <b>${hour}</b>.`;
+    const pos  = minute / 5;
+    minutePart = `The long hand points at the <b>${pos}</b>, so <b>${minute}</b> minutes (${pos} × 5).`;
+  } else if (minute === 30) {
+    hourPart   = `The short hand is between <b>${hour}</b> and <b>${nextHour}</b>.`;
+    minutePart = `The long hand points at the <b>6</b>, so <b>30</b> minutes.`;
+  } else {
+    hourPart   = `The short hand is between <b>${hour}</b> and <b>${nextHour}</b>, so the hour is still <b>${hour}</b>.`;
+    const pos  = minute / 5;
+    minutePart = `The long hand points at the <b>${pos}</b>, so <b>${minute}</b> minutes (${pos} × 5).`;
+  }
+
+  const mm = minute.toString().padStart(2, '0');
+  return `${hourPart} ${minutePart} That makes it <b>${hour}:${mm}</b>.`;
+}
+
+/* ============================================================
+   QUIZ MODE
+   ============================================================ */
+function generateChoices(hour, minute, mode) {
+  const set = new Set();
+  set.add(`${hour}:${minute}`);
+
+  const nextH = (hour % 12) + 1;
+  set.add(`${nextH}:${minute}`);
+
+  let altM;
+  if (mode === 'standard') {
+    const quarters = [0, 15, 30, 45].filter(q => q !== minute);
+    altM = quarters[Math.floor(Math.random() * quarters.length)];
+  } else if (mode === 'intermediate') {
+    const deltas = [-15, -10, -5, 5, 10, 15];
+    const d = deltas[Math.floor(Math.random() * deltas.length)];
+    altM = (minute + d + 60) % 60;
+  } else {
+    const deltas = [-30, -20, -10, 10, 20, 30];
+    const d = deltas[Math.floor(Math.random() * deltas.length)];
+    altM = (minute + d + 60) % 60;
+  }
+  set.add(`${hour}:${altM}`);
+  set.add(`${nextH}:${altM}`);
+
+  const arr = [...set].map(s => {
+    const [h, m] = s.split(':').map(Number);
+    return { h, m };
+  });
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, 4);
+}
+
+function renderQuizChoices() {
+  quizChoicesEl.innerHTML = '';
+  const choices = generateChoices(currentHour, currentMinute, modeSelect.value);
+
+  choices.forEach(({ h, m }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quiz-choice';
+    btn.textContent = `${h}:${m.toString().padStart(2, '0')}`;
+    btn.addEventListener('click', () => onQuizAnswer(h, m, btn));
+    quizChoicesEl.appendChild(btn);
+  });
+}
+
+function onQuizAnswer(pickedH, pickedM, clickedBtn) {
+  const correct = pickedH === currentHour && pickedM === currentMinute;
+
+  /* Disable all and highlight correct */
+  quizChoicesEl.querySelectorAll('.quiz-choice').forEach(b => {
+    b.disabled = true;
+    const [bh, bm] = b.textContent.split(':').map(Number);
+    if (bh === currentHour && bm === currentMinute) b.classList.add('is-correct');
+  });
+  if (!correct) clickedBtn.classList.add('is-wrong');
+
+  sessionTotal++;
+  if (correct) {
+    correctTotal++;
+    currentStreak++;
+    if (currentStreak > bestStreak) {
+      bestStreak = currentStreak;
+      saveBestStreak();
+    }
+    refreshScoreBoard();
+    createConfetti();
+    playTone('correct');
+    showFeedback(true, `✅ Yes! It's <b>${currentHour}:${currentMinute.toString().padStart(2,'0')}</b>.`);
+    pendingAdvanceTimer = setTimeout(generateChallengeTime, 1600);
+  } else {
+    currentStreak = 0;
+    refreshScoreBoard();
+    playTone('wrong');
+    showFeedback(false, `❌ Not quite. ${getExplanation(currentHour, currentMinute)}`);
+    /* auto-advance after a longer pause so they can read */
+    pendingAdvanceTimer = setTimeout(generateChallengeTime, 4500);
+  }
+}
+
+/* ============================================================
+   SELF-CHECK MODE HANDLERS
+   ============================================================ */
+function onSelfCorrect() {
+  sessionTotal++;
+  correctTotal++;
+  currentStreak++;
+  if (currentStreak > bestStreak) {
+    bestStreak = currentStreak;
+    saveBestStreak();
+  }
+  refreshScoreBoard();
+  createConfetti();
+  playTone('correct');
+  showFeedback(true, `✅ Great job! It was <b>${currentHour}:${currentMinute.toString().padStart(2,'0')}</b>.`);
+  pendingAdvanceTimer = setTimeout(generateChallengeTime, 1400);
+}
+
+function onSelfWrong() {
+  sessionTotal++;
+  currentStreak = 0;
+  refreshScoreBoard();
+  playTone('wrong');
+  showFeedback(false, `Here's how to read it: ${getExplanation(currentHour, currentMinute)}`);
+  pendingAdvanceTimer = setTimeout(generateChallengeTime, 4500);
+}
+
+/* ============================================================
+   MODE SWITCHING
+   ============================================================ */
+function setAnswerMode(mode) {
+  answerMode = mode;
+  if (mode === 'quiz') {
+    digitalSquare.hidden = true;
+    feedbackRow.hidden   = true;
+    quizArea.hidden      = false;
+    renderQuizChoices();
+  } else {
+    digitalSquare.hidden = false;
+    feedbackRow.hidden   = false;
+    quizArea.hidden      = true;
+  }
+  hideFeedback();
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('theme-light');
+  document.body.classList.toggle('theme-dark', !isLight);
+  themeToggle.textContent = isLight ? '☀️' : '🌙';
+  try { localStorage.setItem('learningClockTheme', isLight ? 'light' : 'dark'); } catch (e) {}
+}
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+digitalSquare.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleTimeVisibility();
+});
+
+clockContainer.addEventListener('click', () => {
+  generateChallengeTime();
+  playTone('new');
+});
+
+btnRight.addEventListener('click', onSelfCorrect);
+btnWrong.addEventListener('click', onSelfWrong);
+btnHint.addEventListener('click', showHint);
+btnSpeak.addEventListener('click', speakCurrentTime);
+btnSkip.addEventListener('click', () => {
+  clearTimeout(pendingAdvanceTimer);
+  generateChallengeTime();
+});
+
+modeSelect.addEventListener('change', generateChallengeTime);
+answerModeSel.addEventListener('change', () => {
+  setAnswerMode(answerModeSel.value);
+  generateChallengeTime();
+});
+themeToggle.addEventListener('click', toggleTheme);
+
+window.addEventListener('keydown', (e) => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    generateChallengeTime();
+    playTone('new');
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    showTime();
+  } else if (e.key.toLowerCase() === 'h') {
+    e.preventDefault();
+    showHint();
+  } else if (e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    speakCurrentTime();
+  }
+});
+
+/* ============================================================
+   INITIALISE
+   ============================================================ */
+setupClockUi();
+setAnswerMode('self');
+generateChallengeTime();
+refreshScoreBoard();
+</script>
+</body>
+</html>
