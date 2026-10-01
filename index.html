@@ -39,7 +39,7 @@
     --primary-red: #ff4a4a;
     --primary-blue: #3b82f6;
     --accent-green: #10b981;
-    --clock-size: 340px;
+    --clock-size: 425px;
   }
 
   * {
@@ -150,8 +150,8 @@
     height: var(--clock-size);
     background: var(--surface-color);
     border-radius: 50%;
-    border: 8px solid var(--clock-border);
-    box-shadow: 0 10px 30px var(--shadow-color);
+    border: 10px solid var(--clock-border);
+    box-shadow: 0 12px 36px var(--shadow-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -171,8 +171,8 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     background: var(--hand-minute);
     border: 3px solid var(--bg-color);
     border-radius: 50%;
@@ -192,14 +192,14 @@
                 background-color 0.25s, box-shadow 0.25s;
   }
   .hour-hand {
-    width: 8px;
-    height: 75px;
+    width: 10px;
+    height: 94px;
     background-color: var(--primary-red);
     z-index: 3;
   }
   .minute-hand {
-    width: 5px;
-    height: 115px;
+    width: 6px;
+    height: 144px;
     background-color: var(--hand-minute);
     z-index: 2;
   }
@@ -215,20 +215,20 @@
 
   .track-marker {
     position: absolute;
-    width: 4px;
-    height: 10px;
+    width: 5px;
+    height: 12px;
     background: var(--border-color);
     left: 50%;
-    top: 6px;
-    border-radius: 2px;
+    top: 8px;
+    border-radius: 3px;
     transition: background-color 0.25s;
   }
-  .track-marker.major   { width: 6px; height: 16px; background: var(--text-secondary); }
+  .track-marker.major   { width: 8px; height: 20px; background: var(--text-secondary); }
   .track-marker.quarter { background: var(--primary-blue); }
 
   .hour-number {
     position: absolute;
-    font-size: 1.5rem;
+    font-size: 1.875rem;
     font-weight: 800;
     color: var(--text-color);
     line-height: 1;
@@ -237,7 +237,7 @@
   }
   .minute-number {
     position: absolute;
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     font-weight: 700;
     color: var(--text-dim);
     line-height: 1;
@@ -315,6 +315,13 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-weight: 700;
     letter-spacing: 3px;
+  }
+  .time-words {
+    margin-top: 6px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
   }
   .time-hidden-prompt {
     font-size: 1.1rem;
@@ -473,13 +480,14 @@
   /* ============================================================
      SMALL SCREENS
      ============================================================ */
-  @media (max-width: 420px) {
-    :root { --clock-size: 280px; }
-    .hour-number   { font-size: 1.25rem; }
-    .minute-number { font-size: 0.6rem; }
+  @media (max-width: 480px) {
+    :root { --clock-size: 320px; }
+    .hour-number   { font-size: 1.4rem; }
+    .minute-number { font-size: 0.7rem; }
     .time-text     { font-size: 2rem; }
+    .time-words    { font-size: 1rem; }
     .quiz-choice   { font-size: 1.25rem; padding: 16px 10px; }
-    .clock-container { border-width: 6px; }
+    .clock-container { border-width: 7px; }
     .mode-select   { max-width: 110px; font-size: 0.8rem; padding: 8px; }
     .score-board   { font-size: 0.8rem; padding: 8px 10px; gap: 8px; }
   }
@@ -539,6 +547,7 @@
     <div class="digital-display-square" id="digital-toggle-square" role="button" tabindex="0"
          aria-label="Reveal the digital time">
       <div id="time-display" class="time-text" hidden>12:00</div>
+      <div id="time-words" class="time-words" hidden>twelve o'clock</div>
       <div id="prompt-display" class="time-hidden-prompt">👉 Click to Reveal Time 👈</div>
     </div>
 
@@ -586,6 +595,7 @@ const answerModeSel  = document.getElementById('answer-mode');
 const themeToggle    = document.getElementById('theme-toggle');
 const digitalSquare  = document.getElementById('digital-toggle-square');
 const timeDisplay    = document.getElementById('time-display');
+const timeWordsEl    = document.getElementById('time-words');
 const promptDisplay  = document.getElementById('prompt-display');
 const feedbackRow    = document.getElementById('feedback-row');
 const quizArea       = document.getElementById('quiz-area');
@@ -708,7 +718,7 @@ function setupClockUi() {
 
   const size    = clockFace.clientWidth;
   const center  = size / 2;
-  const tickTop = 6;
+  const tickTop = 8;
 
   /* 60 minute ticks */
   for (let i = 0; i < 60; i++) {
@@ -722,7 +732,7 @@ function setupClockUi() {
   }
 
   /* Hour numbers */
-  const hourRadius = 100;
+  const hourRadius = 125;
   for (let num = 1; num <= 12; num++) {
     const el = document.createElement('div');
     el.className   = 'hour-number';
@@ -735,7 +745,7 @@ function setupClockUi() {
   }
 
   /* Small minute numbers */
-  const minuteRadius = 132;
+  const minuteRadius = 165;
   for (let h = 1; h <= 12; h++) {
     const minuteValue = (h * 5) % 60;
     const el = document.createElement('div');
@@ -782,7 +792,8 @@ function updateClockVisuals() {
 
   const hh = currentHour.toString().padStart(2, '0');
   const mm = currentMinute.toString().padStart(2, '0');
-  timeDisplay.textContent = `${hh}:${mm}`;
+  timeDisplay.textContent  = `${hh}:${mm}`;
+  timeWordsEl.textContent  = timeToWords(currentHour, currentMinute);
 }
 
 /* ============================================================
@@ -791,11 +802,13 @@ function updateClockVisuals() {
 function showTime() {
   isTimeVisible = true;
   timeDisplay.hidden   = false;
+  timeWordsEl.hidden   = false;
   promptDisplay.hidden = true;
 }
 function hideTime() {
   isTimeVisible = false;
   timeDisplay.hidden   = true;
+  timeWordsEl.hidden   = true;
   promptDisplay.hidden = false;
 }
 function toggleTimeVisibility() {
@@ -816,7 +829,7 @@ function showHint() {
 }
 
 /* ============================================================
-   SPEECH
+   NUMBER / TIME WORD HELPERS
    ============================================================ */
 const NUM_WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine',
                    'ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen',
@@ -831,6 +844,22 @@ function minuteToWords(m) {
   return o === 0 ? TENS_WORDS[t] : `${TENS_WORDS[t]}-${NUM_WORDS[o]}`;
 }
 
+/* Traditional "past / to" phrasing shown on reveal */
+function timeToWords(hour, minute) {
+  const H = h => NUM_WORDS[h];
+  const nextHour = (hour % 12) + 1;
+
+  if (minute === 0)  return `${H(hour)} o'clock`;
+  if (minute === 15) return `quarter past ${H(hour)}`;
+  if (minute === 30) return `half past ${H(hour)}`;
+  if (minute === 45) return `quarter to ${H(nextHour)}`;
+  if (minute < 30)   return `${minuteToWords(minute)} past ${H(hour)}`;
+  return `${minuteToWords(60 - minute)} to ${H(nextHour)}`;
+}
+
+/* ============================================================
+   SPEECH
+   ============================================================ */
 function speakCurrentTime() {
   if (!('speechSynthesis' in window)) return;
   try {
@@ -937,7 +966,7 @@ function getExplanation(hour, minute) {
   }
 
   const mm = minute.toString().padStart(2, '0');
-  return `${hourPart} ${minutePart} That makes it <b>${hour}:${mm}</b>.`;
+  return `${hourPart} ${minutePart} That makes it <b>${hour}:${mm}</b> — <b>${timeToWords(hour, minute)}</b>.`;
 }
 
 /* ============================================================
@@ -1014,15 +1043,16 @@ function onQuizAnswer(pickedH, pickedM, clickedBtn) {
     refreshScoreBoard();
     createConfetti();
     playTone('correct');
-    showFeedback(true, `✅ Yes! It's <b>${currentHour}:${currentMinute.toString().padStart(2,'0')}</b>.`);
-    pendingAdvanceTimer = setTimeout(generateChallengeTime, 1600);
+    const mm = currentMinute.toString().padStart(2, '0');
+    showFeedback(true, `✅ Yes! It's <b>${currentHour}:${mm}</b> — <b>${timeToWords(currentHour, currentMinute)}</b>.`);
+    pendingAdvanceTimer = setTimeout(generateChallengeTime, 1800);
   } else {
     currentStreak = 0;
     refreshScoreBoard();
     playTone('wrong');
     showFeedback(false, `❌ Not quite. ${getExplanation(currentHour, currentMinute)}`);
     /* auto-advance after a longer pause so they can read */
-    pendingAdvanceTimer = setTimeout(generateChallengeTime, 4500);
+    pendingAdvanceTimer = setTimeout(generateChallengeTime, 5000);
   }
 }
 
@@ -1040,8 +1070,9 @@ function onSelfCorrect() {
   refreshScoreBoard();
   createConfetti();
   playTone('correct');
-  showFeedback(true, `✅ Great job! It was <b>${currentHour}:${currentMinute.toString().padStart(2,'0')}</b>.`);
-  pendingAdvanceTimer = setTimeout(generateChallengeTime, 1400);
+  const mm = currentMinute.toString().padStart(2, '0');
+  showFeedback(true, `✅ Great job! It was <b>${currentHour}:${mm}</b> — <b>${timeToWords(currentHour, currentMinute)}</b>.`);
+  pendingAdvanceTimer = setTimeout(generateChallengeTime, 1600);
 }
 
 function onSelfWrong() {
@@ -1050,7 +1081,7 @@ function onSelfWrong() {
   refreshScoreBoard();
   playTone('wrong');
   showFeedback(false, `Here's how to read it: ${getExplanation(currentHour, currentMinute)}`);
-  pendingAdvanceTimer = setTimeout(generateChallengeTime, 4500);
+  pendingAdvanceTimer = setTimeout(generateChallengeTime, 5000);
 }
 
 /* ============================================================
